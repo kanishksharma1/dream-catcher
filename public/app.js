@@ -33,9 +33,20 @@ dreamForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ dream_text: dream }),
         });
 
+        // Try to parse JSON body (may contain { error, type })
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // ignore parse errors
+        }
 
         if (!response.ok) {
-            showErrorMessage(data.error || 'Failed to process your dream. Please try again.');
+            // Prefer server-provided error message/object
+            const msg = data && data.error
+                ? (typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
+                : (data ? JSON.stringify(data) : response.statusText || 'Failed to process your dream. Please try again.');
+            showErrorMessage(msg);
             return;
         }
         
@@ -47,7 +58,7 @@ dreamForm.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error('Error:', error);
-        showErrorMessage('Network error. Please check your connection and try again.');
+        showErrorMessage(error && error.message ? error.message : 'Network error. Please check your connection and try again.');
     } finally {
         // Re-enable form
         submitBtn.disabled = false;
